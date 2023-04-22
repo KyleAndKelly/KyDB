@@ -2,11 +2,13 @@
 A mini relational database system writtern in C++, based on CMU 15-445.
 Just for study purpose.
 
+
 ## Build
-
+- TODO
 ## Test
-
+- TODO
 ## Arcitecture
+- TODO
 
 ## Reference
 
