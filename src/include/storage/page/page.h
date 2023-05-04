@@ -91,6 +91,7 @@ class Page {
   int pin_count_ = 0;
   /** True if the page is dirty, i.e. it is different from its corresponding page on disk. */
   bool is_dirty_ = false;
+
   /** Page latch. */
   ReaderWriterLatch rwlatch_;
 };

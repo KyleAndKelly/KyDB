@@ -18,9 +18,9 @@
 
 namespace bustub {
 
-BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager, size_t replacer_k,
-                                     LogManager *log_manager)
-    : pool_size_(pool_size), disk_manager_(disk_manager), log_manager_(log_manager) {
+BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager,   
+  int replacer_param, LogManager *log_manager)
+    : pool_size_(pool_size), disk_manager_(disk_manager), replacer_param_(replacer_param), log_manager_(log_manager) {
   // TODO(students): remove this line after you have implemented the buffer pool manager
   throw NotImplementedException(
       "BufferPoolManager is not implemented yet. If you have finished implementing BPM, please remove the throw "
@@ -28,7 +28,7 @@ BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager
 
   // we allocate a consecutive memory space for the buffer pool
   pages_ = new Page[pool_size_];
-  replacer_ = std::make_unique<LRUKReplacer>(pool_size, replacer_k);
+  replacer_ = std::make_unique<LRUReplacer>(pool_size);
 
   // Initially, every page is in the free list.
   for (size_t i = 0; i < pool_size_; ++i) {
@@ -38,7 +38,37 @@ BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager
 
 BufferPoolManager::~BufferPoolManager() { delete[] pages_; }
 
-auto BufferPoolManager::NewPage(page_id_t *page_id) -> Page * { return nullptr; }
+auto BufferPoolManager::NewPage(page_id_t *page_id) -> Page *
+{ 
+
+  frame_id_t* target_frame = nullptr;
+  if(!free_list_.empty()){
+      *target_frame = free_list_.back();
+      free_list_.pop_back();
+  }else if(!replacer_->Victim(target_frame)){
+      return nullptr;
+  }
+  assert(target_frame);
+  //modify pages_
+  auto& target_page = pages_[*target_frame];
+  page_id_t old_page_id = target_page.page_id_;
+  page_id_t new_page_id = AllocatePage();
+  target_page.page_id_ = new_page_id;
+  if(target_page.IsDirty()){
+      disk_manager_->WritePage(target_page.page_id_,target_page.GetData());
+      target_page.is_dirty_ = false;
+  }
+  target_page.ResetMemory();
+
+  //modify page_table_
+
+  page_table_.erase(old_page_id);
+  page_table_.insert(std::make_pair(new_page_id,*target_frame));
+  
+  //modify replacer_
+  replacer_->Pin(*target_frame);
+  return &pages_[*target_frame];
+}
 
 auto BufferPoolManager::FetchPage(page_id_t page_id, [[maybe_unused]] AccessType access_type) -> Page * {
   return nullptr;

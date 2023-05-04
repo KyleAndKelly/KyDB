@@ -15,11 +15,25 @@
 #include <list>
 #include <mutex>  // NOLINT
 #include <vector>
+#include <memory>
+#include <unordered_map>
+#include <cassert>
 
 #include "buffer/replacer.h"
 #include "common/config.h"
+#include "buffer/lru_linked_list.h"
 
 namespace bustub {
+
+struct lru_list_node {
+  int val;
+  std::shared_ptr<lru_list_node> prev;
+  std::shared_ptr<lru_list_node>  next;
+  lru_list_node(int x) : val(x), prev(nullptr), next(nullptr) {}
+};
+
+typedef std::shared_ptr<lru_list_node> list_node_ptr;
+
 
 /**
  * LRUReplacer implements the Least Recently Used replacement policy.
@@ -46,7 +60,12 @@ class LRUReplacer : public Replacer {
   auto Size() -> size_t override;
 
  private:
-  // TODO(student): implement me!
+  std::unordered_map<frame_id_t,list_node_ptr> lru_map;
+  list_node_ptr lru_list_head;
+  list_node_ptr lru_list_tail;
+  int lru_list_size = 0;
+  int max_list_size = 0;
+  
 };
 
 }  // namespace bustub
